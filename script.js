@@ -1,12 +1,17 @@
 //#region Variables
 
+//#region Canvas
 const canvas = document.createElement('canvas');
 document.body.appendChild(canvas);
 canvas.height = window.innerHeight;
 canvas.width = window.innerWidth;
-const balls = [];
 const ctx = canvas.getContext('2d');
-const gravity = 1;
+//#endregion
+
+const balls = [];
+const mousePositions = [];
+const gravity = 3;
+let mouseMoveHandler;
 
 //#endregion
 
@@ -24,57 +29,69 @@ class Point{
 
 class Ball{
 
-    constructor(position, size){
+    constructor(position, vector, size){
         this.position = position;
-        this.vector = new Point(0, 0);
-        this.mass = size;
+        this.vector = vector;
+        this.weight = gravity + (size / 2);
         this.r = size;
+        this.color = randColor();
     }
 
     draw(){
 
         //#region Movement
 
-        // Apply gravity
-        this.vector.y += gravity; // Todo: add mass as well
+        // Gravity
+        this.vector.y += this.weight;
+        this.vector.x > 0 ? this.vector.x -= (this.weight / 50) : this.vector.x += (this.weight / 50);
 
         // Move
         this.position.y += this.vector.y;
+        this.position.x += this.vector.x;
 
         //#endregion
 
         //#region Collision
 
-        // Bottom wall was hit
-        if (this.position.y + this.r >= canvas.height){
+        //#region Walls
+
+        // Bottom
+        if (this.position.y + this.r > canvas.height){
             this.position.y = canvas.height - this.r;
             this.vector.y *= -1; // Invert
             this.vector.y += gravity * 4; // Decelerate
         }
 
-        // Top wall was hit
-        else if (this.position.y - this.r <= 0){
+        // Top
+        if (this.position.y - this.r < 0){
             this.position.y = this.r;
             this.vector.y *= -1; // Invert
             this.vector.y -= gravity * 4; // Decelerate
         }
 
-        // Collision with other balls
-        /*
-        for (let ball of balls){
-            if (ball == this) continue;
-            if (distance(this.x, this.y, ball.x, ball.y) < this.r + ball.r){
-                
-            }
-        }*/
+        // Left
+        if (this.position.x - this.r < 0){
+            this.position.x = this.r;
+            this.vector.x *= -1; // Invert
+            this.vector.x -= gravity * 4; // Decelerate
+        }
+
+        // Right
+        if (this.position.x + this.r > canvas.width){
+            this.position.x = canvas.width - this.r;
+            this.vector.x *= -1; // Invert
+            this.vector.x += gravity * 4; // Decelerate
+        }
+
+        //#endregion
 
         //#endregion
 
         // Draw
-        ctx.fillText(this.vector.y, 300, 50);
         ctx.beginPath();
         ctx.arc(this.position.x, this.position.y, this.r, 0, Math.PI * 2);
-        ctx.stroke();
+        ctx.fillStyle = this.color;
+        ctx.fill();
         ctx.closePath();
     }
 }
@@ -101,13 +118,83 @@ function randSign(){
 
 // Returns a random RGB color
 function randColor(){
-    return {r: Math.random() * 255, g: Math.random() * 255, b: Math.random() * 255};
+    return `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
 }
+
+// Mouse move event listener
+document.addEventListener('mousemove', e => {
+
+    // Get mouse position and add it to the positions array
+    let mousePos = new Point(e.clientX, e.clientY);
+    mousePositions.push(mousePos);
+
+    // Array is bigger than 100, delete an element
+    if (mousePositions.length > 50){
+        mousePositions.splice(0, 1);
+    }
+
+    // Clear the positions after a sec
+    clearTimeout(mouseMoveHandler);
+    mouseMoveHandler = setTimeout(() => {
+        mousePositions.length = 0;
+    }, 75);
+});
 
 // Mouse click event listener
 document.addEventListener('click', e => {
+
+    // Get current mouse position
     let mousePos = new Point(e.clientX, e.clientY);
-    balls.push(new Ball(mousePos, 5));
+
+    let vector = new Point(0, 0);
+
+    // Direction and magnitude applied to the ball
+    if (mousePositions.length > 0){
+
+        // Get mouse positions average X and Y
+        let xPositions = mousePositions.map(p => p.x);
+        let yPositions = mousePositions.map(p => p.y);
+
+        let sumX = xPositions.reduce((previous, current) => current += previous);
+        let sumY = yPositions.reduce((previous, current) => current += previous);
+
+        let avgX = sumX / mousePositions.length;
+        let avgY = sumY / mousePositions.length;
+
+        let x = 0;
+        let y = 0;
+        let force = 30;
+
+        // Top-right
+        if (mousePos.x > avgX && mousePos.y < avgY){
+            x = force;
+            y = -force;
+        }
+
+        // Top-left
+        else if (mousePos.x < avgX && mousePos.y < avgY){
+            x = -force;
+            y = -force;
+        }
+
+        // Bottom-right
+        else if (mousePos.x > avgX && mousePos.y > avgY){
+        
+            x = force;
+            y = force;
+        }
+
+        // Bottom-left
+        else if (mousePos.x < avgX && mousePos.y > avgY){
+        
+            x = -force;
+            y = force;
+        }
+
+        vector = new Point(x, y);
+    }
+
+    balls.push(new Ball(mousePos, vector, 5));
 });
 
 draw();
