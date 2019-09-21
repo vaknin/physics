@@ -16,6 +16,8 @@ let mouseMoveHandler;
 
 //#endregion
 
+//#region Classes
+
 class Point{
 
     constructor(x, y){
@@ -33,17 +35,18 @@ class Ball{
     constructor(position, vector, size){
         this.position = position;
         this.vector = vector;
-        this.weight = gravity + (size / 2);
+        this.weight = gravity + size;
         this.r = size;
+        this.xFriction = this.weight / 50;
     }
 
     draw(){
 
         //#region Movement
 
-        // Gravity
-        this.vector.y += this.weight; // Y
-        this.vector.x > 0 ? this.vector.x -= (this.weight / 50) : this.vector.x += (this.weight / 50); // X
+        // Friction
+        this.vector.y += this.weight; // Y-axis
+        this.vector.x > 0 ? this.vector.x -= xFriction : this.vector.x += xFriction; // X-axis
 
         // Move
         this.position.y += this.vector.y;
@@ -95,6 +98,10 @@ class Ball{
     }
 }
 
+//#endregion
+
+//#region Functions
+
 // Animation loop
 function start(){
 
@@ -110,15 +117,9 @@ function random(a, b){
     return Math.random() * (Math.max(a,b) - Math.min(a,b)) + Math.min(a,b);
 }
 
-// Get either 1 or -1 randomly
-function randSign(){
-    return Math.round(random(0, 1)) == 0 ? 1 : -1;
-}
+//#endregion
 
-// Returns a random RGB color
-function randColor(){
-    return `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
-}
+//#region Events
 
 // Mouse move event listener
 document.addEventListener('mousemove', e => {
@@ -127,16 +128,11 @@ document.addEventListener('mousemove', e => {
     let mousePos = new Point(Math.max(ballSize, e.clientX),Math.max(ballSize, e.clientY));
     mousePositions.push(mousePos);
 
-    // Array is bigger than 100, delete an element
-    if (mousePositions.length > 50){
-        mousePositions.splice(0, 1);
-    }
-
     // Clear the positions after a sec
     clearTimeout(mouseMoveHandler);
     mouseMoveHandler = setTimeout(() => {
         mousePositions.length = 0;
-    }, 13);
+    }, 15);
 });
 
 // Mouse click event listener
@@ -144,19 +140,20 @@ document.addEventListener('click', e => {
 
     // Get current mouse position
     let mousePos = new Point(Math.max(ballSize, e.clientX),Math.max(ballSize, e.clientY));
+
+    // Add a force and direction to the ball
     let vector = new Point(0, 0);
 
-    // Direction and magnitude applied to the ball
+    // Direction and magnitude are applied to the ball by the cursor
     if (mousePositions.length > 0){
 
-        mousePositions.push(mousePos);
         const magnitudeModifier = 0.13;
 
         // Get mouse positions average X and Y
         let xPositions = mousePositions.map(p => p.x);
         let yPositions = mousePositions.map(p => p.y);
         
-        // Clear the array
+        // Clear the positions array
         mousePositions.length = 0;
 
         // X
@@ -170,33 +167,22 @@ document.addEventListener('click', e => {
         let magnitudeY = (maxY - minY) * magnitudeModifier;
 
         // Right
-        if (e.clientX > minX){
-            vector.x = magnitudeX;
-            //console.log("Right");
-        }
+        if (e.clientX > minX) vector.x = magnitudeX;
 
         // Left
-        if (e.clientX < maxX){
-            vector.x = -magnitudeX;
-            //console.log("Left");
-        }
+        else if (e.clientX < maxX) vector.x = -magnitudeX;
 
         // Down
-        if (e.clientY > minY){
-            vector.y = magnitudeY;
-            //console.log("Down");
-        }
+        if (e.clientY > minY) vector.y = magnitudeY;
 
         // Up
-        else if (e.clientY < maxY){
-            vector.y = -magnitudeY;
-            //console.log("Up");
-        }
-
-//        console.log(mousePositions.length);
+        else if (e.clientY < maxY) vector.y = -magnitudeY;
     }
 
-    balls.push(new Ball(mousePos, vector, ballSize));
+    // Spawn the ball with a random size
+    balls.push(new Ball(mousePos, vector, random(3, 6)));
 });
+
+//#endregion
 
 start();
