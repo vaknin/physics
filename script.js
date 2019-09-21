@@ -10,7 +10,7 @@ const ctx = canvas.getContext('2d');
 
 const balls = [];
 const mousePositions = [];
-const gravity = 4;
+const gravity = 1;
 const ballSize = 5;
 let mouseMoveHandler;
 
@@ -28,6 +28,11 @@ class Point{
     distance(x, y){
         return Math.sqrt(Math.pow(this.x - x, 2) + Math.pow(this.y - y, 2));
     }
+
+    multiply(n){
+        this.x *= n;
+        this.y *= n;
+    }
 }
 
 class Ball{
@@ -35,7 +40,7 @@ class Ball{
     constructor(position, vector, size){
         this.position = position;
         this.vector = vector;
-        this.weight = gravity + size;
+        this.weight = gravity + size / 10;
         this.r = size;
         this.xFriction = size / 75;
 
@@ -46,9 +51,16 @@ class Ball{
 
         //#region Movement
 
-        // Friction
-        this.vector.y += this.weight; // Y-axis
-        this.vector.x > 0 ? this.vector.x -= this.xFriction : this.vector.x += this.xFriction; // X-axis
+        // Y-axis friction
+        let touchingBottomWall = (this.position.y >= canvas.height - this.r);
+        if (touchingBottomWall && Math.abs(this.vector.y) < this.weight) this.vector.y = 0;
+        else this.vector.y += this.weight;
+
+        // X-axis friction
+        if (this.vector.x != 0){
+            this.vector.x > 0 ? this.vector.x -= this.xFriction : this.vector.x += this.xFriction;
+            if (Math.abs(this.vector.x) < this.xFriction) this.vector.x = 0;
+        }
 
         // Move
         this.position.y += this.vector.y;
@@ -69,7 +81,7 @@ class Ball{
         }
 
         // Top
-        if (this.position.y - this.r < 0){
+        else if (this.position.y - this.r < 0){
             this.position.y = this.r;
             this.vector.y *= wallForce;
         }
@@ -81,7 +93,7 @@ class Ball{
         }
 
         // Right
-        if (this.position.x + this.r > canvas.width){
+        else if (this.position.x + this.r > canvas.width){
             this.position.x = canvas.width - this.r;
             this.vector.x *= wallForce;
         }
@@ -98,19 +110,21 @@ class Ball{
                 // Don't check collision with self
                 if (ball == this) continue;
                 
-                // Collision with another ball
+                // Collision detected
                 else if (this.position.distance(ball.position.x, ball.position.y) <= this.r + ball.r){
+
+                    let avgX = Math.abs((this.vector.x + ball.vector.x) / 2);
+                    let avgY = Math.abs((this.vector.y + ball.vector.y) / 2);
+
+                    this.vector.x > 0 ? ball.vector.x = avgX : ball.vector.x = -avgX;
+                    this.vector.y > 0 ? ball.vector.y = avgY : ball.vector.Y = -avgY;
+
+                    ball.vector.x > 0 ? this.vector.x = avgX : this.vector.x = -avgX;
+                    ball.vector.y > 0 ? this.vector.y = avgY : this.vector.Y = -avgY;
                     
-                    // The new vector for both balls
-                    let vector = new Point(this.vector.x + ball.vector.x, this.vector.y + ball.vector.y);
-                    
-                    // This
-                    this.vector = vector;
                     this.collided = true;
-                    
-                    // Other ball
-                    ball.vector = vector;
                     ball.collided = true;
+                    
                     break;
                 }
             }
@@ -218,7 +232,7 @@ document.addEventListener('click', e => {
     }
 
     // Spawn the ball with a random size
-    balls.push(new Ball(mousePos, vector, random(10, 15)));
+    balls.push(new Ball(mousePos, vector, random(10, 10)));
 });
 
 //#endregion
