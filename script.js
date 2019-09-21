@@ -128,11 +128,11 @@ document.addEventListener('mousemove', e => {
     let mousePos = new Point(Math.max(ballSize, e.clientX),Math.max(ballSize, e.clientY));
     mousePositions.push(mousePos);
 
-    // Clear the positions after a sec
+    // Clear the positions on idle
     clearTimeout(mouseMoveHandler);
     mouseMoveHandler = setTimeout(() => {
         mousePositions.length = 0;
-    }, 15);
+    }, canvas.width / 85);
 });
 
 // Mouse click event listener
@@ -147,7 +147,7 @@ document.addEventListener('click', e => {
     // Direction and magnitude are applied to the ball by the cursor
     if (mousePositions.length > 0){
 
-        const magnitudeModifier = 0.13;
+        const magnitudeModifier = 0.17;
 
         // Get mouse positions average X and Y
         let xPositions = mousePositions.map(p => p.x);
