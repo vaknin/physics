@@ -10,7 +10,7 @@ const ctx = canvas.getContext('2d');
 
 const balls = [];
 const mousePositions = [];
-const gravity = 3;
+const gravity = 4;
 const ballSize = 5;
 let mouseMoveHandler;
 
@@ -37,7 +37,7 @@ class Ball{
         this.vector = vector;
         this.weight = gravity + size;
         this.r = size;
-        this.xFriction = this.weight / 50;
+        this.xFriction = size / 40;
     }
 
     draw(){
@@ -46,7 +46,7 @@ class Ball{
 
         // Friction
         this.vector.y += this.weight; // Y-axis
-        this.vector.x > 0 ? this.vector.x -= xFriction : this.vector.x += xFriction; // X-axis
+        this.vector.x > 0 ? this.vector.x -= this.xFriction : this.vector.x += this.xFriction; // X-axis
 
         // Move
         this.position.y += this.vector.y;
