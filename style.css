@@ -4,4 +4,5 @@ body {
     overflow: hidden;
     user-select: none;
     box-sizing: border-box;
+    background-color: teal;
 }
