@@ -37,7 +37,9 @@ class Ball{
         this.vector = vector;
         this.weight = gravity + size;
         this.r = size;
-        this.xFriction = size / 40;
+        this.xFriction = size / 75;
+
+        this.collided = false;
     }
 
     draw(){
@@ -58,32 +60,60 @@ class Ball{
 
         //#region Walls
 
+        const wallForce = -0.7;
+
         // Bottom
         if (this.position.y + this.r > canvas.height){
             this.position.y = canvas.height - this.r;
-            this.vector.y *= -1; // Invert
-            this.vector.y += gravity * 3; // Decelerate
+            this.vector.y *= wallForce;
         }
 
         // Top
         if (this.position.y - this.r < 0){
             this.position.y = this.r;
-            this.vector.y *= -1; // Invert
-            this.vector.y -= gravity * 3; // Decelerate
+            this.vector.y *= wallForce;
         }
 
         // Left
         if (this.position.x - this.r < 0){
             this.position.x = this.r;
-            this.vector.x *= -1; // Invert
-            this.vector.x -= gravity * 3; // Decelerate
+            this.vector.x *= wallForce;
         }
 
         // Right
         if (this.position.x + this.r > canvas.width){
             this.position.x = canvas.width - this.r;
-            this.vector.x *= -1; // Invert
-            this.vector.x += gravity * 3; // Decelerate
+            this.vector.x *= wallForce;
+        }
+
+        //#endregion
+
+        //#region Collision with other balls
+
+        if (!this.collided){
+
+            // Check all the balls currently spawned
+            for (let ball of balls){
+
+                // Don't check collision with self
+                if (ball == this) continue;
+                
+                // Collision with another ball
+                else if (this.position.distance(ball.position.x, ball.position.y) <= this.r + ball.r){
+                    
+                    // The new vector for both balls
+                    let vector = new Point(this.vector.x + ball.vector.x, this.vector.y + ball.vector.y);
+                    
+                    // This
+                    this.vector = vector;
+                    this.collided = true;
+                    
+                    // Other ball
+                    ball.vector = vector;
+                    ball.collided = true;
+                    break;
+                }
+            }
         }
 
         //#endregion
@@ -105,10 +135,18 @@ class Ball{
 // Animation loop
 function start(){
 
+    // Draw
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    for (let b of balls){
-        b.draw();
+    for (let ball of balls){
+        ball.draw();
     }
+
+    // Remove collision flag
+    for (let ball of balls){
+        ball.collided = false;
+    }
+
+    // Repeat
     requestAnimationFrame(start);
 }
 
@@ -180,7 +218,7 @@ document.addEventListener('click', e => {
     }
 
     // Spawn the ball with a random size
-    balls.push(new Ball(mousePos, vector, random(3, 6)));
+    balls.push(new Ball(mousePos, vector, random(10, 15)));
 });
 
 //#endregion
