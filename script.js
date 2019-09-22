@@ -1,6 +1,6 @@
 //#region Variables
 
-//#region Canvas
+    //#region Canvas
 const canvas = document.createElement('canvas');
 document.body.appendChild(canvas);
 canvas.height = window.innerHeight;
@@ -43,8 +43,7 @@ class Ball{
         this.weight = gravity + size / 10;
         this.r = size;
         this.xFriction = size / 75;
-
-        this.collided = false;
+        this.collided = [];
     }
 
     draw(){
@@ -70,7 +69,7 @@ class Ball{
 
         //#region Collision
 
-        //#region Walls
+            //#region Walls
 
         const wallForce = -0.7;
 
@@ -100,33 +99,68 @@ class Ball{
 
         //#endregion
 
-        //#region Collision with other balls
+            //#region Collision with other balls
 
-        if (!this.collided){
+        // Check all the balls currently spawned
+        for (let ball of balls){
 
-            // Check all the balls currently spawned
-            for (let ball of balls){
+            // Don't check collision with self
+            if (ball == this) continue;
+            
+            // Collision detected
+            else if (this.position.distance(ball.position.x, ball.position.y) <= this.r + ball.r && this.collided.indexOf(ball) == -1){
 
-                // Don't check collision with self
-                if (ball == this) continue;
-                
-                // Collision detected
-                else if (this.position.distance(ball.position.x, ball.position.y) <= this.r + ball.r){
+                if (this.vector.x == 0 && this.vector.y == 0 && ball.vector.x == 0 && ball.vector.y == 0) continue; // delete?
 
-                    let avgX = Math.abs((this.vector.x + ball.vector.x) / 2);
-                    let avgY = Math.abs((this.vector.y + ball.vector.y) / 2);
+                let thisX = this.vector.x;
+                let thisY = this.vector.y;
 
-                    this.vector.x > 0 ? ball.vector.x = avgX : ball.vector.x = -avgX;
-                    this.vector.y > 0 ? ball.vector.y = avgY : ball.vector.Y = -avgY;
+                let ballX = ball.vector.x;
+                let ballY = ball.vector.y;
 
-                    ball.vector.x > 0 ? this.vector.x = avgX : this.vector.x = -avgX;
-                    ball.vector.y > 0 ? this.vector.y = avgY : this.vector.Y = -avgY;
-                    
-                    this.collided = true;
-                    ball.collided = true;
-                    
-                    break;
+                const accelerateAmount = 0.999; // 0.95
+                const decelerateAmount = 0.5; // 0.5
+
+                // X-axis this has more force
+                if (Math.abs(thisX) > Math.abs(ballX)){
+                    ball.vector.x = this.vector.x * accelerateAmount;
+                    this.vector.x *= decelerateAmount;
                 }
+
+                // X-axis the other ball has more force
+                else{
+                    this.vector.x = ball.vector.x * accelerateAmount;;
+                    ball.vector.x *= decelerateAmount;
+                }
+
+                // Y-axis this has more force
+                if (Math.abs(thisY) > Math.abs(ballY)){
+                    ball.vector.y = this.vector.y * accelerateAmount;
+                    this.vector.y *= decelerateAmount;
+                }
+
+                // Y-axis the other ball has more force
+                else{
+                    this.vector.y = ball.vector.y * accelerateAmount;
+                    ball.vector.y *= decelerateAmount;
+                }
+
+                const collisionThresholdX = 30;
+                const collisionThresholdY = 25;
+                const forceModifier = 7;
+
+                let collisionMagnitudeX = Math.abs(thisX) + Math.abs(ballX);
+                let collisionMagnitudeY = Math.abs(thisY) + Math.abs(ballY);
+
+                if (collisionMagnitudeX > collisionThresholdX){
+                    thisX > ballX ? ball.vector.y += this.getRandomForce(forceModifier) : this.vector.y += this.getRandomForce(forceModifier);
+                }
+
+                if (collisionMagnitudeY > collisionThresholdY){
+                    thisY > ballY ? ball.vector.x += this.getRandomForce(forceModifier) : this.vector.x += this.getRandomForce(forceModifier);
+                }
+                
+                ball.collided.push(this);
             }
         }
 
@@ -134,11 +168,15 @@ class Ball{
 
         //#endregion
 
-        // Draw
+        // Draw the ball
         ctx.beginPath();
         ctx.arc(this.position.x, this.position.y, this.r, 0, Math.PI * 2);
         ctx.fill();
         ctx.closePath();
+    }
+
+    getRandomForce(amount){
+        return Math.round(Math.random()) == 0 ? amount : -amount;
     }
 }
 
@@ -155,9 +193,8 @@ function start(){
         ball.draw();
     }
 
-    // Remove collision flag
     for (let ball of balls){
-        ball.collided = false;
+        ball.collided = [];
     }
 
     // Repeat
